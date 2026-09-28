@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081923">
+  <meta name="description" content="Iterative GRPO learns a step-level Q-function from logged conversations and uses it to improve multi-turn policies without a simulator inside the training loop.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Iterative GRPO — Batch-Online Multi-Turn RL">
+  <meta property="og:description" content="Learn a step-level Q-function from logged conversations, then use it to improve the policy with Iterative GRPO.">
+  <meta property="og:url" content="https://iterativegrpo.github.io/">
+  <meta property="og:image" content="https://iterativegrpo.github.io/assets/igrpo_method.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Iterative GRPO — Multi-Turn RL via Single-Turn RLHF</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <script>document.documentElement.classList.add('js')</script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" data-header>
+    <a class="wordmark" href="#top" aria-label="Iterative GRPO home">
+      <span>Iterative GRPO</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span></span><span></span><span></span>
+      <span class="sr-only">Open navigation</span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+      <a href="#idea">Idea</a>
+      <a href="#method">Method</a>
+      <a href="#environments">Environments</a>
+      <a href="#results">Results</a>
+      <a href="#citation">Citation</a>
+      <a class="nav-code" href="https://github.com/IterativeGRPO/IterativeGRPO">Code <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow reveal">Research · Multi-turn reinforcement learning</p>
+          <h1 class="reveal">Iterative GRPO</h1>
+          <p class="hero-deck reveal">
+            Batch-online multi-turn RL via single-turn RLHF. A step-level Q<sup>π</sup>
+            forecasts the environment’s expected downstream return for each response,
+            without rolling out the rest of the conversation during policy improvement.
+          </p>
+          <div class="hero-actions reveal">
+            <a class="button button-primary" href="https://arxiv.org/abs/2511.21638">Read the paper <span aria-hidden="true">↗</span></a>
+            <a class="button button-secondary" href="https://github.com/IterativeGRPO/IterativeGRPO">View the code <span aria-hidden="true">→</span></a>
+          </div>
+          <p class="authors reveal">
+            Daniel R. Jiang · Ankur Samanta · Yukai Yang · Jalaj Bhandari · Rémi Munos · Tyler Lu
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+    <section class="section problem" id="idea">
+      <div class="section-heading reveal">
+        <p class="section-number">01 / The setting</p>
+        <h2>Multi-turn policy improvement without a simulator in the training loop.</h2>
+        <p>
+          Many conversational agents are designed to drive outcomes such as resolving a
+          support issue, completing a task, or helping a customer reach a decision. These
+          interactions unfold over multiple turns, and success may only be known after the
+          full conversation ends.
+        </p>
+      </div>
+
+      <div class="deployment-context reveal">
+        <div>
+          <p class="section-number">Batch-online deployment</p>
+          <h3>Training proceeds in deployment rounds.</h3>
+        </div>
+        <p>
+          Real-world deployment is rarely fully online or fully offline. In the batch-online
+          setting, the current policy runs over a deployment window—such as an A/B test lasting
+          days or weeks—and logs complete conversations with observed outcomes. Training then
+          happens offline on that fixed batch before the updated policy is deployed again.
+        </p>
+      </div>
+
+      <div class="comparison-grid">
+        <article class="comparison-card conventional reveal">
+          <div class="card-label"><span>A</span> On-policy multi-turn RL</div>
+          <h3>The environment must respond after every agent turn.</h3>
+          <div class="conversation-strip" aria-hidden="true">
+            <i class="agent"></i><i class="user"></i><i class="agent"></i><i class="user"></i><i class="agent"></i><b>R</b>
+          </div>
+          <p>Full-trajectory policy optimization requires an interactive environment inside the training loop.</p>
+        </article>
+        <article class="comparison-card igrpo reveal">
+          <div class="card-label"><span>B</span> Iterative GRPO</div>
+          <h3>Q<sup>π</sup> forecasts the environment's expected downstream return.</h3>
+          <div class="q-strip" aria-hidden="true"><i>state</i><i>response</i><b>Q<sup>π</sup></b></div>
+          <p>Each candidate response can be scored without a simulator generating the remaining conversation.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section method" id="method">
+      <div class="section-heading narrow reveal">
+        <p class="section-number">02 / The method</p>
+        <h2>Forecast the environment's expected downstream return.</h2>
+        <p>
+          At each deployment round, I-GRPO learns a step-level Q-function Q<sup>π</sup>
+          from logged trajectories. It forecasts the expected downstream return from the
+          environment for each candidate response.
+          Here, one step is one agent response conditioned on the full conversation history.
+          I-GRPO then runs GRPO using Q<sup>π</sup> as the reward model, without querying
+          a simulator during policy improvement.
+        </p>
+      </div>
+
+      <div class="method-visual reveal">
+        <iframe
+          src="visual.html"
+          title="Interactive animation of the Iterative GRPO training loop"
+          loading="lazy"
+          scrolling="no"
+          data-method-visual></iframe>
+        <noscript>
+          <img src="assets/igrpo_method.png" alt="I-GRPO learns a step-level Q-function from logged multi-turn trajectories and uses it as the reward for policy improvement.">
+        </noscript>
+      </div>
+
+    </section>
+
+    <section class="section environments" id="environments">
+      <div class="section-heading reveal">
+        <p class="section-number">03 / Evaluation suite</p>
+        <h2>Six multi-turn negotiation environments.</h2>
+        <p>
+          The suite spans distributive bargaining, resource allocation, and multi-issue
+          agreement. Each environment changes what the parties know, what they can trade,
+          and what counts as a successful outcome.
+        </p>
+      </div>
+      <div class="environment-grid">
+        <article class="env-card env-craigslist" data-motion>
+          <header><span>01 · PRICE BARGAINING</span><h3>Craigslist</h3><p>A vendor and customer negotiate one price. The vendor sees the listing price; only the customer sees their target.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="A buyer offer and seller ask converge on an agreed price between a private target and the listing price.">
+            <text class="scene-kicker" x="26" y="32">ONE ITEM · ONE PRICE · ASYMMETRIC INFORMATION</text>
+            <g class="private-card private-left"><rect x="26" y="52" width="142" height="62" rx="10"/><text x="40" y="74">VENDOR SEES</text><text class="scene-value" x="40" y="99" data-scene="list-price">LIST $100</text></g>
+            <g class="private-card private-right"><rect x="392" y="52" width="142" height="62" rx="10"/><text x="406" y="74">CUSTOMER SEES</text><text class="scene-value" x="406" y="99" data-scene="buyer-target">TARGET $70</text></g>
+            <line class="price-line" x1="70" y1="184" x2="490" y2="184"/>
+            <g class="price-tick"><line x1="88" y1="176" x2="88" y2="194"/><text x="88" y="216">TARGET</text></g>
+            <g class="price-tick"><line x1="472" y1="176" x2="472" y2="194"/><text x="472" y="216">LIST</text></g>
+            <g class="offer offer-buyer"><path d="M116 142h116v32H116z"/><text x="174" y="163">BUYER OFFER</text></g>
+            <g class="offer offer-seller"><path d="M328 142h116v32H328z"/><text x="386" y="163">SELLER ASK</text></g>
+            <g class="agreement"><circle cx="280" cy="184" r="9"/><rect x="218" y="226" width="124" height="32" rx="16"/><text x="280" y="247" data-scene="agreed-price">AGREED $85</text></g>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW LISTING</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Private state</dt><dd>Customer target</dd></div><div><dt>Outcome</dt><dd>Agreed price ÷ list price</dd></div></dl>
+        </article>
+
+        <article class="env-card env-ultimatum" data-motion>
+          <header><span>02 · DISTRIBUTIVE BARGAINING</span><h3>Ultimatum</h3><p>The proposer divides a fixed pool. The responder can accept, reject, or counter—but disagreement destroys the pool for both.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="A fixed pool of ten coins is split between proposer and responder, with acceptance preserving the pool and rejection yielding zero.">
+            <text class="scene-kicker" x="26" y="32" data-scene="ultimatum-pool">POOL $500 · 6 ROUNDS · ACCEPTANCE RISK</text>
+            <text class="role-label" x="94" y="72">PROPOSER</text><text class="role-label" x="466" y="72">RESPONDER</text>
+            <g class="coin-pool">
+              <circle cx="205" cy="126" r="17"/><circle cx="243" cy="126" r="17"/><circle cx="281" cy="126" r="17"/><circle cx="319" cy="126" r="17"/><circle cx="357" cy="126" r="17"/>
+              <circle cx="205" cy="166" r="17"/><circle cx="243" cy="166" r="17"/><circle cx="281" cy="166" r="17"/><circle cx="319" cy="166" r="17"/><circle cx="357" cy="166" r="17"/>
+            </g>
+            <path class="split-line" d="M300 94v104"/><text class="split-label" x="280" y="220" data-scene="proposer-share">300</text><text class="split-label" x="319" y="220" data-scene="responder-share">200</text>
+            <g class="decision accept"><rect x="54" y="226" width="145" height="32" rx="16"/><text x="126" y="247">ACCEPT → SPLIT</text></g>
+            <g class="decision reject"><rect x="361" y="226" width="145" height="32" rx="16"/><text x="433" y="247">REJECT → 0 / 0</text></g>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW POOL</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Leverage</dt><dd>Responder can destroy the pool</dd></div><div><dt>Outcome</dt><dd>Proposer share ÷ equal split</dd></div></dl>
+        </article>
+
+        <article class="env-card env-dond" data-motion>
+          <header><span>03 · ITEM ALLOCATION</span><h3>Deal or No Deal</h3><p>Books, hats, and balls must all be allocated. Each side knows only its own per-item values, so useful trades have to be discovered in dialogue.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="Books, hats, and balls move from a common pool into two allocations according to different private values, followed by explicit acceptance.">
+            <text class="scene-kicker" x="26" y="32" data-scene="dond-pool">POOL: 2 BOOKS · 1 HAT · 2 BALLS</text>
+            <g class="value-panel values-a"><rect x="26" y="54" width="126" height="104" rx="10"/><text x="40" y="76">MY VALUES</text><text x="40" y="101" data-scene="book-value">BOOK 1</text><text x="40" y="124" data-scene="hat-value">HAT 4</text><text x="40" y="147" data-scene="ball-value">BALL 2</text></g>
+            <g class="value-panel values-b"><rect x="408" y="54" width="126" height="104" rx="10"/><text x="422" y="76">THEIR VALUES</text><text x="422" y="101">BOOK ?</text><text x="422" y="124">HAT ?</text><text x="422" y="147">BALL ?</text></g>
+            <g class="item-pool"><text x="280" y="72">POOL</text><g class="item item-book"><rect x="204" y="92" width="42" height="55" rx="3"/><line x1="213" y1="104" x2="237" y2="104"/><line x1="213" y1="114" x2="237" y2="114"/></g><g class="item item-hat"><path d="M259 126h56l-8 16h-40zM271 126l5-31h22l5 31z"/></g><g class="item item-ball"><circle cx="350" cy="120" r="27"/><path d="M328 120h44M350 98v44"/></g></g>
+            <path class="allocation-path path-a" d="M278 163C240 192 196 196 144 208"/><path class="allocation-path path-b" d="M300 163c40 29 86 33 134 45"/>
+            <g class="allocation"><rect x="55" y="190" width="142" height="36" rx="8"/><text x="126" y="213" data-scene="mine-allocation">MINE: HATS</text></g>
+            <g class="allocation"><rect x="363" y="190" width="142" height="36" rx="8"/><text x="434" y="213" data-scene="their-allocation">THEIRS: BOOKS + BALLS</text></g>
+            <g class="accept-stamp"><rect x="222" y="236" width="116" height="30" rx="15"/><text x="280" y="256">PROPOSE → ACCEPT</text></g>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW ITEM POOL</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Private state</dt><dd>Different item values</dd></div><div><dt>Closure</dt><dd>Valid proposal + explicit accept</dd></div></dl>
+        </article>
+
+        <article class="env-card env-casino" data-motion>
+          <header><span>04 · PRIORITY TRADING</span><h3>CaSiNo</h3><p>Two campers divide three packages each of food, water, and firewood. Private priority rankings and reasons create opportunities for logrolling.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="Two campers with different high, medium, and low priorities trade nine campsite supply packages.">
+            <text class="scene-kicker" x="26" y="32">3 × FOOD · 3 × WATER · 3 × FIREWOOD</text>
+            <g class="priority-panel camper-a"><rect x="26" y="52" width="138" height="110" rx="10"/><text x="40" y="74">CAMPER A</text><text class="priority high" x="40" y="101" data-scene="camper-a-high">HIGH  WATER</text><text class="priority medium" x="40" y="125" data-scene="camper-a-medium">MED   FOOD</text><text class="priority low" x="40" y="149" data-scene="camper-a-low">LOW   FIREWOOD</text></g>
+            <g class="priority-panel camper-b"><rect x="396" y="52" width="138" height="110" rx="10"/><text x="410" y="74">CAMPER B</text><text class="priority high" x="410" y="101" data-scene="camper-b-high">HIGH  FIREWOOD</text><text class="priority medium" x="410" y="125" data-scene="camper-b-medium">MED   FOOD</text><text class="priority low" x="410" y="149" data-scene="camper-b-low">LOW   WATER</text></g>
+            <g class="supply supply-food"><text x="280" y="72">FOOD</text><rect x="232" y="86" width="28" height="28" rx="5"/><rect x="266" y="86" width="28" height="28" rx="5"/><rect x="300" y="86" width="28" height="28" rx="5"/></g>
+            <g class="supply supply-water"><text x="280" y="144">WATER</text><rect x="232" y="158" width="28" height="28" rx="14"/><rect x="266" y="158" width="28" height="28" rx="14"/><rect x="300" y="158" width="28" height="28" rx="14"/></g>
+            <g class="supply supply-fire"><text x="280" y="216">FIREWOOD</text><rect x="232" y="230" width="28" height="12" rx="6"/><rect x="266" y="230" width="28" height="12" rx="6"/><rect x="300" y="230" width="28" height="12" rx="6"/></g>
+            <path class="trade-arrow trade-left" d="M226 173C195 173 181 160 169 140"/><path class="trade-arrow trade-right" d="M334 235c31 0 45-18 57-51"/>
+            <text class="trade-note" x="280" y="268">TRADE LOW PRIORITY FOR HIGH PRIORITY</text>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW CAMPSITE</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Private state</dt><dd>High / medium / low priorities</dd></div><div><dt>Opportunity</dt><dd>Trade across differing needs</dd></div></dl>
+        </article>
+
+        <article class="env-card env-job" data-motion>
+          <header><span>05 · LINKED ISSUES</span><h3>Job Interview</h3><p>A recruiter and worker negotiate five terms at once. Salary and holiday preferences oppose; the value of a position also depends on the company.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="A five-row job offer combines salary and holiday sliders with workplace, company, and position choices, including a link from company to position.">
+            <text class="scene-kicker" x="26" y="32">ONE OFFER · FIVE COUPLED TERMS</text>
+            <g class="offer-sheet"><rect x="52" y="50" width="456" height="196" rx="14"/>
+              <g class="offer-row row-salary"><text x="76" y="81">SALARY</text><line x1="200" y1="76" x2="464" y2="76"/><circle cx="346" cy="76" r="8"/><text class="range-min" x="194" y="94">20K</text><text class="range-max" x="466" y="94">51K</text></g>
+              <g class="offer-row row-holiday"><text x="76" y="119">HOLIDAY</text><line x1="200" y1="114" x2="464" y2="114"/><circle cx="312" cy="114" r="8"/><text class="range-min" x="194" y="132">2 DAYS</text><text class="range-max" x="466" y="132">7 DAYS</text></g>
+              <g class="offer-row"><text x="76" y="158">WORKPLACE</text><rect x="296" y="140" width="94" height="25" rx="12"/><text class="choice" x="343" y="157" data-scene="job-workplace">TOKYO</text></g>
+              <g class="offer-row row-company"><text x="76" y="194">COMPANY</text><rect x="251" y="176" width="92" height="25" rx="12"/><text class="choice" x="297" y="193" data-scene="job-company">APPLE</text></g>
+              <g class="offer-row row-position"><text x="76" y="229">POSITION</text><rect x="356" y="211" width="108" height="25" rx="12"/><text class="choice" x="410" y="228" data-scene="job-position">DESIGNER</text></g>
+              <path class="dependency" d="M343 188C365 185 376 198 385 211"/><text class="dependency-label" x="397" y="192">VALUE DEPENDS ON</text>
+            </g>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW CANDIDATE</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Trade space</dt><dd>2 numeric + 3 discrete issues</dd></div><div><dt>Dependency</dt><dd>Company changes position value</dd></div></dl>
+        </article>
+
+        <article class="env-card env-alliance" data-motion>
+          <header><span>06 · MULTI-STAKEHOLDER</span><h3>Alliance</h3><p>Two stakeholders negotiate five project issues. Each has a private option-score matrix and a private minimum acceptable score—their BATNA.</p></header>
+          <svg class="env-scene" viewBox="0 0 560 280" role="img" aria-label="Two private score matrices evaluate one five-issue project agreement, and both totals must cross their BATNA thresholds.">
+            <text class="scene-kicker" x="26" y="32">5 ISSUES · PRIVATE SCORES · TWO BATNA THRESHOLDS</text>
+            <g class="matrix matrix-a"><text x="84" y="67">STAKEHOLDER A</text><rect x="28" y="80" width="184" height="112" rx="10"/>
+              <g class="matrix-cells"><rect x="44" y="96" width="28" height="14"/><rect x="78" y="96" width="70" height="14"/><rect x="154" y="96" width="42" height="14"/><rect x="44" y="118" width="72" height="14"/><rect x="122" y="118" width="34" height="14"/><rect x="162" y="118" width="34" height="14"/><rect x="44" y="140" width="45" height="14"/><rect x="95" y="140" width="101" height="14"/><rect x="44" y="162" width="92" height="14"/><rect x="142" y="162" width="54" height="14"/></g>
+            </g>
+            <g class="matrix matrix-b"><text x="476" y="67">STAKEHOLDER B</text><rect x="348" y="80" width="184" height="112" rx="10"/>
+              <g class="matrix-cells"><rect x="364" y="96" width="62" height="14"/><rect x="432" y="96" width="84" height="14"/><rect x="364" y="118" width="36" height="14"/><rect x="406" y="118" width="76" height="14"/><rect x="488" y="118" width="28" height="14"/><rect x="364" y="140" width="91" height="14"/><rect x="461" y="140" width="55" height="14"/><rect x="364" y="162" width="52" height="14"/><rect x="422" y="162" width="94" height="14"/></g>
+            </g>
+            <g class="joint-deal"><rect x="228" y="82" width="104" height="108" rx="12"/><text x="280" y="106">DEAL</text><text class="deal-code" x="280" y="132" data-scene="alliance-deal-1">A1 · B2</text><text class="deal-code" x="280" y="153" data-scene="alliance-deal-2">C3 · D1</text><text class="deal-code" x="280" y="174" data-scene="alliance-deal-3">E4</text></g>
+            <g class="batna batna-a"><text x="28" y="220">A SCORE</text><rect x="102" y="209" width="165" height="12" rx="6"/><line x1="190" y1="204" x2="190" y2="226"/><circle cx="232" cy="215" r="7"/></g>
+            <g class="batna batna-b"><text x="294" y="220">B SCORE</text><rect x="368" y="209" width="164" height="12" rx="6"/><line x1="450" y1="204" x2="450" y2="226"/><circle cx="491" cy="215" r="7"/></g>
+            <text class="threshold-note" x="280" y="258">AGREEMENT ONLY IF BOTH SCORES CLEAR BATNA</text>
+          </svg>
+          <div class="env-dialogue" aria-hidden="true"><div class="dialogue-head"><span>Conversation</span><b data-dialogue-status>NEW PROJECT</b></div><div class="dialogue-log" data-dialogue-log></div><div class="dialogue-track" data-dialogue-track></div></div>
+          <dl class="env-facts"><div><dt>Private state</dt><dd>Option scores + BATNA</dd></div><div><dt>Feasibility</dt><dd>Both thresholds must be met</dd></div></dl>
+        </article>
+      </div>
+    </section>
+
+    <section class="section release" id="code">
+      <div class="release-card reveal">
+        <div>
+          <p class="section-number">Open-source implementation</p>
+        <h2>Code and experimental setup.</h2>
+          <p>
+            The release includes both model backbones, all six environments, step-level
+            Q-function training, GRPO and baseline trainers, evaluation tooling, cached
+            Qwen round-0 rollouts, and portable SLURM launchers.
+          </p>
+        </div>
+        <a class="button button-dark" href="https://github.com/IterativeGRPO/IterativeGRPO">Explore the repository <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+
+    <section class="section results" id="results">
+      <div class="section-heading reveal">
+        <p class="section-number">04 / Results</p>
+        <h2>Held-out evaluation.</h2>
+        <p>
+          I-GRPO achieves the highest held-out expected discounted return in five of six
+          environments and improves over the initial policy in all six. Results use four
+          deployment rounds, 100 in-training kernels per environment, and four conversations
+          per kernel.
+        </p>
+      </div>
+
+      <div class="table-wrap reveal">
+        <div class="table-heading">
+          <div><span class="result-index">Held-out evaluation</span><h3>All methods, all environments</h3></div>
+          <p>Qwen2.5-7B-Instruct · best in-training checkpoint · 100 held-out kernels · mean ± one standard error across three seeds.</p>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Method</th><th>Craigslist</th><th>Ultimatum</th><th>Deal or No Deal</th><th>CaSiNo</th><th>Job Interview</th><th>Alliance</th></tr></thead>
+            <tbody>
+              <tr><th>Base</th><td>0.36</td><td>0.80</td><td>0.52</td><td>0.38</td><td>0.25</td><td>0.48</td></tr>
+              <tr><th>MT-SFT</th><td>0.41 ± .01</td><td>0.79 ± .01</td><td>0.50 ± .05</td><td>0.42 ± .01</td><td>0.25 ± .00</td><td>0.51 ± .02</td></tr>
+              <tr><th>MT-KTO</th><td>0.48 ± .01</td><td>0.86 ± .01</td><td>0.56 ± .00</td><td class="best-other">0.54 ± .01</td><td>0.29 ± .01</td><td>0.59 ± .00</td></tr>
+              <tr><th>MT-PPO</th><td>0.38 ± .02</td><td>0.78 ± .01</td><td>0.51 ± .03</td><td>0.38 ± .02</td><td>0.24 ± .01</td><td>0.51 ± .05</td></tr>
+              <tr><th>ArCHer</th><td>0.45 ± .01</td><td>0.91 ± .03</td><td>0.60 ± .03</td><td>0.53 ± .03</td><td>0.26 ± .01</td><td>0.57 ± .01</td></tr>
+              <tr><th>ArCHer-LC</th><td>0.38 ± .01</td><td>0.86 ± .02</td><td>0.53 ± .04</td><td>0.40 ± .04</td><td>0.25 ± .01</td><td>0.49 ± .06</td></tr>
+              <tr><th>ST-GRPO</th><td>0.54 ± .00</td><td>0.94 ± .05</td><td>0.58 ± .06</td><td>0.46 ± .03</td><td>0.28 ± .04</td><td>0.55 ± .02</td></tr>
+              <tr class="ours"><th>I-GRPO</th><td>0.55 ± .01</td><td>0.99 ± .00</td><td>0.70 ± .01</td><td>0.45 ± .03</td><td>0.35 ± .03</td><td>0.65 ± .01</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section citation" id="citation">
+      <div class="section-heading narrow reveal">
+        <p class="section-number">05 / Citation</p>
+        <h2>Cite Iterative GRPO.</h2>
+        <p>If Iterative GRPO is useful in your research, please cite the paper.</p>
+      </div>
+      <div class="citation-box reveal">
+        <pre><code id="bibtex">@misc{jiang2026iterativegrpobatchonlinemultiturn,
+  title         = {Iterative GRPO: Batch-Online Multi-Turn RL via Single-Turn RLHF},
+  author        = {Daniel R. Jiang and Ankur Samanta and Yukai Yang and
+                   Jalaj Bhandari and Rémi Munos and Tyler Lu},
+  year          = {2026},
+  eprint        = {2511.21638},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  url           = {https://arxiv.org/abs/2511.21638}
+}</code></pre>
+        <button class="copy-button" type="button" data-copy aria-label="Copy BibTeX citation"><span data-copy-label>Copy BibTeX</span></button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div>
+      <a class="wordmark footer-mark" href="#top"><span>Iterative GRPO</span></a>
+      <p>Batch-Online Multi-Turn RL via Single-Turn RLHF</p>
+    </div>
+    <div class="footer-links">
+      <a href="https://arxiv.org/abs/2511.21638">Paper ↗</a>
+      <a href="https://github.com/IterativeGRPO/IterativeGRPO">Code ↗</a>
+      <a href="https://github.com/IterativeGRPO/IterativeGRPO/blob/main/LICENSE">MIT License ↗</a>
+    </div>
+  </footer>
+</body>
+</html>

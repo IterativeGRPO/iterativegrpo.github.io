@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>I-GRPO animated method</title>
+  <link rel="stylesheet" href="visual.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="card">
+      <div class="fig-scroll">
+        <svg id="fig" viewBox="0 0 1200 600" role="img" aria-labelledby="figTitle">
+          <title id="figTitle">Animated I-GRPO diagram: collect multi-turn episodes, fit Q-pi on Monte Carlo returns, score a group of responses with Q-pi, run GRPO, and repeat with the improved policy.</title>
+        </svg>
+      </div>
+
+      <div class="caption" aria-live="polite">
+        <div class="tag">I-GRPO</div>
+        <div>
+          <p class="ph-title" id="phTitle"></p>
+          <p class="ph-text" id="phText"></p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="transport">
+          <button class="btn" id="prev" aria-label="Previous step"><svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM13 3v10L6 8z"/></svg></button>
+          <button class="btn primary" id="play" aria-label="Pause"><svg viewBox="0 0 16 16" id="playIcon"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg></button>
+          <button class="btn" id="next" aria-label="Next step"><svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM3 3v10l7-5z"/></svg></button>
+        </div>
+        <div class="phases" id="phases" role="group" aria-label="Jump to step"></div>
+        <div class="speed" role="group" aria-label="Speed">
+          <button class="btn" data-speed="0.5" aria-pressed="false">0.5×</button>
+          <button class="btn" data-speed="1" aria-pressed="true">1×</button>
+          <button class="btn" data-speed="2" aria-pressed="false">2×</button>
+          <button class="btn" id="restart">Restart</button>
+        </div>
+      </div>
+      <input class="scrub" id="scrub" type="range" min="0" max="21" step="0.01" value="0" aria-label="Position within this iteration">
+      <div class="stats">
+        <span>Iteration <b id="iter">1</b></span>
+        <span class="succ">Policy success rate <b id="succ">30%</b><svg id="spark" width="140" height="26" viewBox="0 0 140 26" aria-hidden="true"></svg></span>
+        <span>Future turns simulated while scoring <b>0</b></span>
+        <span class="note">Numbers are illustrative.</span>
+      </div>
+    </div>
+  </main>
+  <script src="visual.js"></script>
+</body>
+</html>
